@@ -11,9 +11,13 @@
 
 int main() {
     // 1. 保存先ディレクトリを作成
-    char mkdir_command[256];
-    snprintf(mkdir_command, sizeof(mkdir_command), "mkdir -p %s", SAVE_DIRECTORY);
-    system(mkdir_command);
+    struct stat st = {0};
+    if (stat(SAVE_DIRECTORY, &st) == -1) {
+        if (mkdir(SAVE_DIRECTORY, 0755) != 0) {
+            perror("Failed to create directory");
+            return 1;
+        }
+    }
     
     // 2. 現在時刻を取得してタイムスタンプを生成
     time_t now;
