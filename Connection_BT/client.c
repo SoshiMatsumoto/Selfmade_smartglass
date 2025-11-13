@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <bluetooth_address>\n", argv[0]);
-        fprintf(stderr, "Example: %s B8:27:EB:XX:XX:XX\n", argv[0]);
+        fprintf(stderr, "Example: %s E4:5F:01:F2:6D:21\n", argv[0]);
         return 1;
     }
 
