@@ -72,9 +72,18 @@ int main(int argc, char **argv)
             // コマンド処理
             if (strcmp(buf, "START_RECORD") == 0) {
                 printf("→ Action: Starting video recording...\n");
-                // ここに実際のカメラ制御コードを追加
-                char *response = "OK:RECORDING_STARTED";
-                write(client, response, strlen(response));
+                
+                // recording プログラムを実行
+                int ret = system("../../Smartglass_apps/rec_program/recording &");
+                
+                if (ret == 0) {
+                    char *response = "OK:RECORDING_STARTED";
+                    write(client, response, strlen(response));
+                } else {
+                    printf("   ERROR: Failed to start recording (return code: %d)\n", ret);
+                    char *response = "ERROR:RECORDING_FAILED";
+                    write(client, response, strlen(response));
+                }
             }
             else if (strcmp(buf, "STOP_RECORD") == 0) {
                 printf("→ Action: Stopping video recording...\n");
