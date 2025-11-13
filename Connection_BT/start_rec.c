@@ -6,7 +6,7 @@
 #include <sys/types.h>
 
 #define MAX_COMMAND_LENGTH 512
-#define SAVE_DIRECTORY "Videos"
+#define SAVE_DIRECTORY "/home/matsumoto/bt_attack/Selfmade_smartglass/Connection_BT/Videos"
 #define RPICAM_PATH "/home/matsumoto/bt_attack/Smartglass_apps/build/apps/rpicam-vid"
 
 int main() {
