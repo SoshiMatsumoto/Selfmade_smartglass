@@ -74,8 +74,8 @@ int main(int argc, char **argv)
             if (strcmp(buf, "START_RECORD") == 0) {
                 printf("→ Action: Starting video recording...\n");
                 
-                // recording プログラムを実行
-                int ret = system("../../Smartglass_apps/rec_program/recording &");
+                // start_rec プログラムを実行（同じディレクトリ内）
+                int ret = system("./start_rec &");
                 
                 if (ret == 0) {
                     char *response = "OK:RECORDING_STARTED";
