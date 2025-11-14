@@ -41,7 +41,7 @@ int main() {
     // 5. rpicam-vidコマンドを組み立て
     char command[MAX_COMMAND_LENGTH];
     snprintf(command, sizeof(command), 
-             "%s -t 10000 --width 1920 --height 1080 -o %s",
+             "%s -t 0 --width 1920 --height 1080 -o %s",
              RPICAM_PATH, output_path);
     
     // 6. 実行するコマンドを表示
