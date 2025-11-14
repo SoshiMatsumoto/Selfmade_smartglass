@@ -88,8 +88,18 @@ int main(int argc, char **argv)
             }
             else if (strcmp(buf, "STOP_RECORD") == 0) {
                 printf("→ Action: Stopping video recording...\n");
-                char *response = "OK:RECORDING_STOPPED";
-                write(client, response, strlen(response));
+                
+                // stop_rec プログラムを実行
+                int ret = system("./stop_rec");
+                
+                if (ret == 0) {
+                    char *response = "OK:RECORDING_STOPPED";
+                    write(client, response, strlen(response));
+                } else {
+                    printf("   ERROR: Failed to stop recording (return code: %d)\n", ret);
+                    char *response = "ERROR:STOP_FAILED";
+                    write(client, response, strlen(response));
+                }
             }
             else if (strcmp(buf, "TAKE_PHOTO") == 0) {
                 printf("→ Action: Taking photo...\n");
