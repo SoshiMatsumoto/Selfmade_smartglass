@@ -5,7 +5,7 @@ Recording can be started by "START_RECORDING" command from a device connected wi
 You have to do some following method.
 
 ### Smartglass(Server)
-For Smartglass programs are "cam_apps_server.c" and "client.c".
+For Smartglass programs are "cam_apps_server.c" and "start_rec.c".
 
 ```bash
 #How to compile.
