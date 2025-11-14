@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #define MAX_COMMAND_LENGTH 512
 #define SAVE_DIRECTORY "Videos"
