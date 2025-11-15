@@ -5,7 +5,7 @@ Recording can be started by "START_RECORDING" command from a device connected wi
 You have to do some following method.
 
 ### Smartglass(Server)
-For Smartglass programs are "cam_apps_server.c" and "start_rec.c".
+For Smartglass programs are "cam_apps_server.c" and "start_rec.c" and "stop_rec.c".
 
 ```bash
 #How to compile.
@@ -13,6 +13,10 @@ For Smartglass programs are "cam_apps_server.c" and "start_rec.c".
 gcc -o start_rec start_rec.c
 #You should do this because of check the recording program.
 ./start_rec
+#Build the stop recording program.
+gcc -o stop_rec stop_rec.c
+#You should do this because of check the recording program too.
+./stop_rec
 #Build the server program.
 gcc -o cam_apps_server cam_apps_server.c -lbluetooth
 ./cam_apps_server
@@ -31,3 +35,15 @@ For Attacker program is client.c
 #How to Compile
 gcc -o client client.c
 ```
+
+### Command rist
+
+1. START_RECORD - Start video recording
+
+2. STOP_RECORD  - Stop video recording
+
+3. TAKE_PHOTO   - Take a photo
+
+4. STATUS       - Get camera status
+
+5. QUIT         - Disconnect and exit
