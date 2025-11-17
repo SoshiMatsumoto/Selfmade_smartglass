@@ -33,7 +33,7 @@ For Attacker program is client.c
 
 ```bash
 #How to Compile
-gcc -o client client.c
+gcc -o client client.c -lbluetooth
 ```
 
 ### Command rist
