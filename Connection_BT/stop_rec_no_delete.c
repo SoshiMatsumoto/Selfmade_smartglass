@@ -71,8 +71,9 @@ int main() {
     } else {
         printf("警告: PIDファイルの削除に失敗しました。\n");
     }
-    */
     printf("PIDファイルは保持されます。\n");
+    */
+
     
     return 0;
 }
