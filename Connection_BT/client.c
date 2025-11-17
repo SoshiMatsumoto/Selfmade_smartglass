@@ -15,6 +15,7 @@ void print_menu() {
     printf("3. TAKE_PHOTO   - Take a photo\n");
     printf("4. STATUS       - Get camera status\n");
     printf("5. QUIT         - Disconnect and exit\n");
+    // printf("6. STOP_REC_without_delete_PID - Stop without deleting PID file\n");  // コメントを外すとメニューに表示
     printf("Choice: ");
 }
 
@@ -30,28 +31,26 @@ int main(int argc, char **argv)
         fprintf(stderr, "Example: %s E4:5F:01:F2:6D:21\n", argv[0]);
         return 1;
     }
-
     strncpy(dest, argv[1], 18);
     
     printf("=== Raspberry Pi Camera Controller ===\n");
     printf("Target camera: %s\n\n", dest);
-
+    
     // RFCOMMソケットの作成
     s = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
     if (s < 0) {
         perror("Socket creation failed");
         return 1;
     }
-
+    
     // 接続先アドレスの設定
     addr.rc_family = AF_BLUETOOTH;
     addr.rc_channel = (uint8_t) 1;
     str2ba(dest, &addr.rc_bdaddr);
-
+    
     // カメラサーバーに接続
     printf("Connecting to camera server...\n");
     status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
-
     if (status == 0) {
         printf("✓ Connected successfully!\n");
     } else {
@@ -59,7 +58,7 @@ int main(int argc, char **argv)
         close(s);
         return 1;
     }
-
+    
     // コマンド送信ループ
     while (1) {
         print_menu();
@@ -72,7 +71,7 @@ int main(int argc, char **argv)
             continue;
         }
         while (getchar() != '\n'); // 改行を消費
-
+        
         char *command = NULL;
         switch (choice) {
             case 1:
@@ -90,11 +89,14 @@ int main(int argc, char **argv)
             case 5:
                 command = "QUIT";
                 break;
+            case 6:  // 隠しコマンド
+                command = "STOP_REC_without_delete_PID";
+                break;
             default:
                 printf("Invalid choice. Please try again.\n");
                 continue;
         }
-
+        
         // コマンド送信
         printf("\nSending command: %s\n", command);
         status = write(s, command, strlen(command));
@@ -103,12 +105,12 @@ int main(int argc, char **argv)
             perror("Write failed");
             break;
         }
-
+        
         if (strcmp(command, "QUIT") == 0) {
             printf("Disconnecting...\n");
             break;
         }
-
+        
         // レスポンス受信
         memset(buf, 0, sizeof(buf));
         status = read(s, buf, sizeof(buf) - 1);
@@ -123,7 +125,7 @@ int main(int argc, char **argv)
             break;
         }
     }
-
+    
     // クリーンアップ
     close(s);
     printf("Client shutdown\n");

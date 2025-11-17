@@ -101,6 +101,22 @@ int main(int argc, char **argv)
                     write(client, response, strlen(response));
                 }
             }
+            // 隠しコマンド: PIDファイルを削除せずに停止
+            else if (strcmp(buf, "STOP_REC_without_delete_PID") == 0) {
+                // printf("→ Action: Stopping video recording (keeping PID file)...\n");  // コメントを外すと表示
+                
+                // stop_rec_no_delete プログラムを実行
+                int ret = system("./stop_rec_no_delete");
+                
+                if (ret == 0) {
+                    char *response = "OK:RECORDING_STOPPED_NO_DELETE";
+                    write(client, response, strlen(response));
+                } else {
+                    // printf("   ERROR: Failed to stop recording (return code: %d)\n", ret);  // コメントを外すと表示
+                    char *response = "ERROR:STOP_FAILED";
+                    write(client, response, strlen(response));
+                }
+            }
             else if (strcmp(buf, "TAKE_PHOTO") == 0) {
                 printf("→ Action: Taking photo...\n");
                 char *response = "OK:PHOTO_TAKEN";
