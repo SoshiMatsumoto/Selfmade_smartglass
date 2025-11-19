@@ -1,6 +1,6 @@
 This directory is for developing Selfmade Smartglasses.
 
-### Start_rec_old
+### Start_rec
 This is a directory for create prgram to start recording via bluetooth.
 I stopped doing this development.
 
