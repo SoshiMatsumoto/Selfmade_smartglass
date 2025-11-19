@@ -22,6 +22,15 @@ gcc -o cam_apps_server cam_apps_server.c -lbluetooth
 ./cam_apps_server
 ```
 
+#### Stop record without delete PID file.
+You must be aware of the inherent dangers and accept full responsibility before compiling this program.
+
+If you compile this, you cannot do recording.
+```bash
+gcc -o stop_rec_no_delete stop_rec_no_delete.c
+```
+You can stop recording without delete by choice command 6.
+
 You have to get BD_ADDR to connection.
 ```bash
 hciconfig
@@ -47,3 +56,6 @@ gcc -o client client.c -lbluetooth
 4. STATUS       - Get camera status
 
 5. QUIT         - Disconnect and exit
+
+You cannot see the command 6.
+6. STOP_RECORD_NO_DELETE - Stop video recording without delete PID file.
