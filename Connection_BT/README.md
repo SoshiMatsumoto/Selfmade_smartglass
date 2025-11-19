@@ -2,8 +2,6 @@ This directory is making camera apps for smartglass.
 
 Recording can be started by "START_RECORDING" command from a device connected with bluetooth.
 
-You have to do some following method.
-
 ### Smartglass(Server)
 For Smartglass programs are "cam_apps_server.c" and "start_rec.c" and "stop_rec.c".
 
@@ -31,7 +29,7 @@ gcc -o stop_rec_no_delete stop_rec_no_delete.c
 ```
 You can stop recording without delete by choice command 6.
 
-You have to get BD_ADDR to connection.
+#### You have to get BD_ADDR to connection.
 ```bash
 hciconfig
 #You have to memo the Address like "XX:XX:XX:XX:XX:XX"
@@ -58,4 +56,5 @@ gcc -o client client.c -lbluetooth
 5. QUIT         - Disconnect and exit
 
 You cannot see the command 6.
+
 6. STOP_RECORD_NO_DELETE - Stop video recording without delete PID file.
