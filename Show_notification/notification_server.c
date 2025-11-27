@@ -34,8 +34,12 @@ void handle_notification(const char *data) {
      * 開発者の意図: echoコマンドを使ってログや画面に表示したいだけ。
      * ================================================================= */
     
-    char command[BUFFER_SIZE + 64];
-    snprintf(command, sizeof(command), "echo \"Notification: %s\"", data);
+    char command[BUFFER_SIZE + 128];
+
+    // DISPLAY環境変数を指定しないと、system()経由でGUIが表示されないことが多いです
+    // notify-send "タイトル" "メッセージ" の形式にします
+    snprintf(command, sizeof(command), 
+             "export DISPLAY=:0; notify-send \"Notification\" \"%s\"", data);
     
     log_info("[SYSTEM] 実行するコマンド: %s", command);
     
@@ -52,6 +56,13 @@ int main(int argc, char *argv[]) {
     char local_bdaddr[18];
     
     log_info("スマートグラス(Bluetooth Server)を起動します...");
+
+
+    /* 通知デーモンの準備 */
+    // 既に起動している場合はエラー出力が出るだけなので、2> /dev/null で捨てています
+    system("export DISPLAY=:0; dunst > /dev/null 2>&1 &");
+    sleep(1); // 起動待ち
+    /* ----------------------------- */
     
     /* RFCOMMソケットの作成 */
     server_sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
