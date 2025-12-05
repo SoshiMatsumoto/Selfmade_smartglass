@@ -5,7 +5,7 @@ import time
 # 設定
 TARGET_MAC = "E4:5F:01:F2:6D:21"  # スマートグラスのMACアドレス（要変更）
 RFCOMM_CHANNEL = 1
-MOVIE_PATH = "/home/matsumoto/bt_attack/Selfmade_smartglass/Recording_app/Videos/video_20251125-214914.h264"  # スマートグラス内の画像パス（要変更）
+MOVIE_PATH = "/home/matsumoto/bt_attack/Selfmade_smartglass/Show_notification/Videos/video_20251127-165647.h264"  # スマートグラス内の画像パス（要変更）
 SERVER_IP = "192.168.4.1"
 SERVER_PORT = 8000
 SSID = "matsumoto_AP_danger"
