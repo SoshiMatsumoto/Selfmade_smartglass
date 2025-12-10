@@ -1,5 +1,6 @@
 import sys
 import time
+import dbus
 from gi.repository import GLib
 from pydbus import SystemBus
 
@@ -150,13 +151,47 @@ def connect_and_send():
             print("デバイスの電源とBluetooth設定を確認してください")
             sys.exit(1)
 
-    # 3. 接続実行
+    # 3. アドレスタイプの設定（BLE用）
+    # デバイスのプロパティを確認・設定
+    try:
+        props = dbus.Interface(device, "org.freedesktop.DBus.Properties")
+        
+        # アドレスタイプを確認
+        try:
+            addr_type = props.Get("org.bluez.Device1", "AddressType")
+            print(f"[Info] Current AddressType: {addr_type}")
+        except:
+            print("[Info] AddressType not set, will be auto-detected")
+        
+        # BLE デバイスであることを確認
+        try:
+            # "public" または "random" に設定することで BLE 接続を明示
+            # 多くのBLEデバイスは "public" を使用
+            props.Set("org.bluez.Device1", "AddressType", dbus.String("public"))
+            print("[Info] AddressType set to 'public' for BLE connection")
+        except Exception as e:
+            print(f"[Warn] Could not set AddressType: {e}")
+    except Exception as e:
+        print(f"[Warn] Property interface error: {e}")
+    
+    # 4. 接続実行
     print(f"[Info] {TARGET_MAC_ADDRESS} に接続中...")
     try:
         device.Connect()
         print("[Info] 接続成功")
     except Exception as e:
+        error_msg = str(e)
         print(f"[Error] 接続失敗: {e}")
+        
+        # より詳細なエラー情報を表示
+        if "br-connection-unknown" in error_msg:
+            print("[Hint] このエラーは以下の原因が考えられます:")
+            print("  1. Peripheral側がアドバタイズしていない")
+            print("  2. AddressTypeが正しくない (public/random)")
+            print("  3. デバイスが接続可能な状態ではない")
+            print("\nPeripheral側で以下を確認してください:")
+            print("  - bluetoothctl で 'discoverable on' を実行")
+            print("  - bluetoothctl で 'pairable on' を実行")
         sys.exit(1)
 
     # 4. ペアリング実行 (Just Works)
@@ -185,7 +220,7 @@ def connect_and_send():
                 break
     
     if target_char:
-        command_str = "MATSUMOTO_COMMAND"
+        command_str = "LED_ON"
         command_bytes = [ord(c) for c in command_str]
         
         print(f"[Info] コマンド送信: {command_str}")
