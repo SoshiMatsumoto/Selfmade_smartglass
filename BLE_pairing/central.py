@@ -4,11 +4,10 @@ from gi.repository import GLib
 from pydbus import SystemBus
 
 # === 設定エリア ===
-# 通信相手（Peripheral側）のMACアドレスをここに記入してください
+# 通信相手(Peripheral側)のMACアドレスをここに記入してください
 TARGET_MAC_ADDRESS = "E4:5F:01:F2:6D:21" 
 
 # コマンド送信先のCharacteristic UUID (Peripheral側と合わせる)
-# ここでは汎用的なUUIDを使用しています
 UART_RX_CHARACTERISTIC_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 
 # Just Works用エージェント設定
@@ -16,21 +15,80 @@ AGENT_PATH = '/test/agent_initiator'
 CAPABILITY = "NoInputNoOutput"
 
 # === Agent Class (Just Works強制用) ===
+AGENT_INTERFACE = '''
+<node>
+  <interface name='org.bluez.Agent1'>
+    <method name='Release'/>
+    <method name='RequestPinCode'>
+      <arg type='o' name='device' direction='in'/>
+      <arg type='s' name='pincode' direction='out'/>
+    </method>
+    <method name='DisplayPinCode'>
+      <arg type='o' name='device' direction='in'/>
+      <arg type='s' name='pincode' direction='in'/>
+    </method>
+    <method name='RequestPasskey'>
+      <arg type='o' name='device' direction='in'/>
+      <arg type='u' name='passkey' direction='out'/>
+    </method>
+    <method name='DisplayPasskey'>
+      <arg type='o' name='device' direction='in'/>
+      <arg type='u' name='passkey' direction='in'/>
+      <arg type='q' name='entered' direction='in'/>
+    </method>
+    <method name='RequestConfirmation'>
+      <arg type='o' name='device' direction='in'/>
+      <arg type='u' name='passkey' direction='in'/>
+    </method>
+    <method name='RequestAuthorization'>
+      <arg type='o' name='device' direction='in'/>
+    </method>
+    <method name='AuthorizeService'>
+      <arg type='o' name='device' direction='in'/>
+      <arg type='s' name='uuid' direction='in'/>
+    </method>
+    <method name='Cancel'/>
+  </interface>
+</node>
+'''
+
 class InitiatorAgent(object):
     """
     ペアリング要求時にOSからの確認に応答するためのエージェント
     """
-    def Release(self): pass
-    def RequestPinCode(self, device): return "0000"
-    def DisplayPinCode(self, device, pincode): pass
-    def RequestPasskey(self, device): return 0
-    def DisplayPasskey(self, device, passkey, entered): pass
+    dbus = AGENT_INTERFACE
+    
+    def Release(self):
+        print("[Agent] Release called")
+    
+    def RequestPinCode(self, device):
+        print(f"[Agent] RequestPinCode for {device}")
+        return "0000"
+    
+    def DisplayPinCode(self, device, pincode):
+        print(f"[Agent] DisplayPinCode: {pincode}")
+    
+    def RequestPasskey(self, device):
+        print(f"[Agent] RequestPasskey for {device}")
+        return 0
+    
+    def DisplayPasskey(self, device, passkey, entered):
+        print(f"[Agent] DisplayPasskey: {passkey:06d} (entered: {entered})")
+    
     def RequestConfirmation(self, device, passkey):
         print(f"[Agent] ペアリング確認要求: {passkey:06d} -> 自動承認")
         return
-    def RequestAuthorization(self, device): return
-    def AuthorizeService(self, device, uuid): return
-    def Cancel(self): pass
+    
+    def RequestAuthorization(self, device):
+        print(f"[Agent] RequestAuthorization for {device}")
+        return
+    
+    def AuthorizeService(self, device, uuid):
+        print(f"[Agent] AuthorizeService: {uuid}")
+        return
+    
+    def Cancel(self):
+        print("[Agent] Cancel called")
 
 # === Main Logic ===
 def connect_and_send():
@@ -40,7 +98,10 @@ def connect_and_send():
 
     # 1. Agentの登録
     agent = InitiatorAgent()
-    bus.publish(AGENT_PATH, agent)
+    
+    # オブジェクトをD-Busに登録する正しい方法
+    bus.register_object(AGENT_PATH, agent, None)
+    
     try:
         manager.RegisterAgent(AGENT_PATH, CAPABILITY)
         manager.RequestDefaultAgent(AGENT_PATH)
@@ -49,7 +110,6 @@ def connect_and_send():
         print(f"[Warn] Agent registration failed (maybe already registered): {e}")
 
     # 2. デバイスオブジェクトの取得と接続
-    # BlueZのD-Busパスは MACアドレスの ':' を '_' に置換した形式になります
     device_path = f"/org/bluez/hci0/dev_{TARGET_MAC_ADDRESS.replace(':', '_')}"
     
     try:
@@ -79,16 +139,13 @@ def connect_and_send():
         print("[Info] 既にペアリング済みです")
 
     # 4. GATTサービスの解決待ち
-    # 接続直後はService/Characteristicのロードに時間がかかるため少し待つか、
-    # 本来はServicesResolvedプロパティを監視すべきですが、簡易的にsleepします
     time.sleep(2)
 
     # 5. コマンド送信 (Characteristicへの書き込み)
-    # BlueZ上でCharacteristicを探す
     mngr_obj = bus.get('org.bluez', '/')
     mngt = mngr_obj.GetManagedObjects()
-
     target_char = None
+    
     for path, interfaces in mngt.items():
         if "org.bluez.GattCharacteristic1" in interfaces:
             if interfaces["org.bluez.GattCharacteristic1"]["UUID"] == UART_RX_CHARACTERISTIC_UUID:
@@ -96,13 +153,11 @@ def connect_and_send():
                 break
     
     if target_char:
-        # 送信するコマンド (バイト列に変換)
         command_str = "LED_ON"
         command_bytes = [ord(c) for c in command_str]
         
         print(f"[Info] コマンド送信: {command_str}")
         try:
-            # WriteValue(bytes, options)
             target_char.WriteValue(command_bytes, {})
             print("[Info] 送信完了")
         except Exception as e:
