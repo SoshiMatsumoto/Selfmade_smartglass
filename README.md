@@ -11,3 +11,9 @@ This is a directory for Recording application.
 ### Show_notification
 This is a directory for the PoC of silent recording attack.
 If you want do this PoC, you have to install Recording_app and set the direct path of "start_rec" and "stop_rec".
+
+### exfil_images
+This is a directory for the PoC of exfil files attack.
+
+Before you do this PoC, you have to do Show_notification.
+And make the file for be exfiltrated.
