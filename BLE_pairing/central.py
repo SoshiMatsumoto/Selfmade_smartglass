@@ -109,16 +109,48 @@ def connect_and_send():
     except Exception as e:
         print(f"[Warn] Agent registration failed (maybe already registered): {e}")
 
-    # 2. デバイスオブジェクトの取得と接続
+    # 2. デバイスをスキャンして発見
     device_path = f"/org/bluez/hci0/dev_{TARGET_MAC_ADDRESS.replace(':', '_')}"
     
+    # まず既に登録されているか確認
     try:
         device = bus.get('org.bluez', device_path)
+        print("[Info] デバイスは既に登録されています")
     except KeyError:
-        print("[Error] デバイスが見つかりません。一度スキャンしてOSに認識させてください。")
-        print("実行例: bluetoothctl scan on (数秒待って) scan off")
-        sys.exit(1)
+        # 見つからない場合はスキャンを実行
+        print("[Info] デバイスが未登録です。スキャンを開始します...")
+        
+        try:
+            adapter.StartDiscovery()
+            print("[Info] スキャン中... (最大30秒待機)")
+        except Exception as e:
+            print(f"[Error] スキャン開始失敗: {e}")
+            sys.exit(1)
+        
+        # デバイスが見つかるまで待機 (最大30秒)
+        found = False
+        for i in range(30):
+            try:
+                device = bus.get('org.bluez', device_path)
+                found = True
+                print(f"[Info] デバイスを発見しました！ ({i+1}秒後)")
+                break
+            except KeyError:
+                time.sleep(1)
+        
+        # スキャン停止
+        try:
+            adapter.StopDiscovery()
+        except Exception as e:
+            print(f"[Warn] スキャン停止時の警告: {e}")
+        
+        if not found:
+            print("[Error] 30秒待機しましたがデバイスが見つかりませんでした")
+            print(f"対象MAC: {TARGET_MAC_ADDRESS}")
+            print("デバイスの電源とBluetooth設定を確認してください")
+            sys.exit(1)
 
+    # 3. 接続実行
     print(f"[Info] {TARGET_MAC_ADDRESS} に接続中...")
     try:
         device.Connect()
@@ -127,7 +159,7 @@ def connect_and_send():
         print(f"[Error] 接続失敗: {e}")
         sys.exit(1)
 
-    # 3. ペアリング実行 (Just Works)
+    # 4. ペアリング実行 (Just Works)
     if not device.Paired:
         print("[Info] ペアリングを開始します...")
         try:
@@ -138,10 +170,10 @@ def connect_and_send():
     else:
         print("[Info] 既にペアリング済みです")
 
-    # 4. GATTサービスの解決待ち
+    # 5. GATTサービスの解決待ち
     time.sleep(2)
 
-    # 5. コマンド送信 (Characteristicへの書き込み)
+    # 6. コマンド送信 (Characteristicへの書き込み)
     mngr_obj = bus.get('org.bluez', '/')
     mngt = mngr_obj.GetManagedObjects()
     target_char = None
@@ -153,7 +185,7 @@ def connect_and_send():
                 break
     
     if target_char:
-        command_str = "LED_ON"
+        command_str = "MATSUMOTO_COMMAND"
         command_bytes = [ord(c) for c in command_str]
         
         print(f"[Info] コマンド送信: {command_str}")
