@@ -12,7 +12,7 @@ def ble_pair_and_attack():
 
     # 1. gatttool をインタラクティブモード(-I)で起動
     # -t random : これで強制的にBLE (Random Address) として振る舞います
-    cmd = f"gatttool -b {TARGET_MAC} -t random -I"
+    cmd = f"gatttool -b {TARGET_MAC} -t public -I"
     child = pexpect.spawn(cmd)
 
     # ログを画面に出したい場合はコメントアウトを外す
