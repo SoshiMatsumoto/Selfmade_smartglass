@@ -4,14 +4,14 @@ from gi.repository import GLib
 from pydbus import SystemBus
 
 # ==========================================
-# 設定エリア
+# 設定
 # ==========================================
 TARGET_MAC = "E4:5F:01:F2:6D:21"
 NUS_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 COMMAND_TO_SEND = "LED_ON"
 
 # ==========================================
-# Agent (Just Works) - 変更なし
+# Agent (ペアリング自動承認用)
 # ==========================================
 AGENT_PATH = '/test/agent_initiator'
 AGENT_CAPABILITY = "NoInputNoOutput"
@@ -67,13 +67,8 @@ class AutoAgent(object):
 class BleController:
     def __init__(self):
         self.bus = SystemBus()
-        try:
-            self.adapter = self.bus.get('org.bluez', '/org/bluez/hci0')
-            self.manager = self.bus.get('org.bluez', '/org/bluez')
-        except Exception as e:
-            print(f"[Fatal] Bluetoothアダプタが見つかりません: {e}")
-            sys.exit(1)
-        
+        self.adapter = self.bus.get('org.bluez', '/org/bluez/hci0')
+        self.manager = self.bus.get('org.bluez', '/org/bluez')
         self.device_path = f"/org/bluez/hci0/dev_{TARGET_MAC.replace(':', '_')}"
         self.device = None
 
@@ -84,92 +79,83 @@ class BleController:
             self.manager.RegisterAgent(AGENT_PATH, AGENT_CAPABILITY)
             self.manager.RequestDefaultAgent(AGENT_PATH)
             print("[Info] Agent registered")
-        except Exception:
-            pass 
+        except: pass
 
-    def find_device(self):
-        print(f"[Info] {TARGET_MAC} を検索中 (BLE強制)...")
+    def force_connect(self):
+        print(f"[Info] {TARGET_MAC} へ直接接続を試みます (Scan Skip)...")
         
-        # ★★★ ここが修正ポイント ★★★
-        # Classic Bluetoothを無視して、BLEだけを探すフィルタを適用
+        # 1. 古い情報の削除
         try:
-            filter_args = {
-                'Transport': GLib.Variant('s', 'le'), # 'le' = Low Energy only
-                'DuplicateData': GLib.Variant('b', True)
-            }
-            self.adapter.SetDiscoveryFilter(filter_args)
-            print("[Info] BLE専用フィルタを適用しました")
-        except Exception as e:
-            print(f"[Warn] フィルタ適用失敗: {e}")
-
-        # 既存のデバイスキャッシュがあれば削除する（Classicとして認識されているのを防ぐため）
-        try:
-            existing_device = self.bus.get('org.bluez', self.device_path)
+            # 以前のClassic接続情報などが残っていると邪魔なので消す
+            bad_device = self.bus.get('org.bluez', self.device_path)
             self.adapter.RemoveDevice(self.device_path)
-            print("[Info] 古いキャッシュを削除しました")
+            print("[Info] キャッシュクリア")
+            time.sleep(1)
         except:
             pass
 
-        # スキャン開始
+        # 2. 強制接続 (ConnectDeviceメソッド)
+        # これを使うと AddressType を指定して接続できる
+        connected = False
         try:
-            self.adapter.StartDiscovery()
-            
-            found = False
-            for i in range(20): # 20秒待機
-                try:
-                    self.device = self.bus.get('org.bluez', self.device_path)
-                    # デバイスが見つかっても、AddressTypeが public/random (BLE) か確認するとなお良い
-                    print(f"[Info] デバイスを発見！ ({i+1}秒目)")
-                    found = True
-                    break
-                except KeyError:
-                    time.sleep(1)
-            
-            self.adapter.StopDiscovery()
-            return found
-
+            print("[Info] Connecting as Public Address (LE)...")
+            self.adapter.ConnectDevice({
+                'Address': TARGET_MAC,
+                'AddressType': 'public'  # Raspberry Piは通常Public
+            })
+            connected = True
         except Exception as e:
-            print(f"[Error] スキャンエラー: {e}")
+            print(f"[Warn] Public接続失敗: {e}")
+            try:
+                print("[Info] Connecting as Random Address (LE)...")
+                self.adapter.ConnectDevice({
+                    'Address': TARGET_MAC,
+                    'AddressType': 'random'
+                })
+                connected = True
+            except Exception as e2:
+                print(f"[Error] Random接続失敗: {e2}")
+
+        if not connected:
             return False
 
-    def connect(self):
-        if not self.device: return False
+        # 3. デバイスオブジェクトの取得待ち
+        print("[Info] デバイスオブジェクトの生成を待機中...")
+        for i in range(10):
+            try:
+                self.device = self.bus.get('org.bluez', self.device_path)
+                print("[Info] 接続確立！")
+                return True
+            except:
+                time.sleep(0.5)
+        
+        return False
 
-        print(f"[Info] 接続開始...")
-        try:
-            # BLEとして接続
-            self.device.Connect()
-            print("[Info] 接続成功！")
-        except Exception as e:
-            print(f"[Error] 接続失敗: {e}")
-            return False
+    def pair_and_send(self):
+        if not self.device: return
 
         # ペアリング
         if not self.device.Paired:
-            print("[Info] ペアリング中...")
+            print("[Info] ペアリング要求...")
             try:
                 self.device.Pair()
                 print("[Info] ペアリング成功")
             except Exception as e:
-                print(f"[Warn] ペアリング失敗 (接続は維持): {e}")
-        
-        # サービス解決待ち
-        print("[Info] サービス解決を待機中...")
-        timeout = 0
-        while not self.device.ServicesResolved:
-            time.sleep(0.5)
-            timeout += 1
-            if timeout > 20:
-                print("[Warn] タイムアウト")
-                break
-        return True
+                print(f"[Warn] ペアリング警告: {e}")
 
-    def send_command(self):
-        print("[Info] NUS RXキャラクタリスティックを検索...")
+        # サービス解決待ち
+        print("[Info] GATTサービス解決待ち...")
+        for i in range(20):
+            if self.device.ServicesResolved:
+                break
+            time.sleep(0.5)
+
+        # 送信
+        print("[Info] キャラクタリスティック検索...")
         mngr = self.bus.get('org.bluez', '/')
         objects = mngr.GetManagedObjects()
-
         target_char = None
+        
         for path, interfaces in objects.items():
             if "org.bluez.GattCharacteristic1" in interfaces:
                 uuid = interfaces["org.bluez.GattCharacteristic1"]["UUID"]
@@ -180,37 +166,29 @@ class BleController:
         if target_char:
             try:
                 data = [ord(c) for c in COMMAND_TO_SEND]
-                # WriteValueにtypeオプションを追加
                 target_char.WriteValue(data, {'type': GLib.Variant('s', 'command')})
-                print(f"[Success] '{COMMAND_TO_SEND}' を送信しました！")
+                print(f"\n[SUCCESS] コマンド '{COMMAND_TO_SEND}' 送信成功！！！\n")
             except Exception as e:
-                 # リトライ（WriteRequest）
-                try:
-                    data = [ord(c) for c in COMMAND_TO_SEND]
-                    target_char.WriteValue(data, {})
-                    print(f"[Success] '{COMMAND_TO_SEND}' を送信しました！(Retry)")
-                except Exception as e2:
-                    print(f"[Error] 送信失敗: {e2}")
+                print(f"[Error] 送信失敗: {e}")
         else:
-            print(f"[Error] NUSが見つかりません。")
+            print("[Error] Nordic UART Serviceが見つかりません (GATT解決に失敗した可能性があります)")
 
     def disconnect(self):
         if self.device:
             try:
                 self.device.Disconnect()
-                print("[Info] 切断しました")
+                print("[Info] 切断完了")
             except: pass
 
 if __name__ == '__main__':
     controller = BleController()
     try:
         controller.setup_agent()
-        if controller.find_device():
-            if controller.connect():
-                controller.send_command()
-                time.sleep(2)
-                controller.disconnect()
+        if controller.force_connect():
+            controller.pair_and_send()
+            time.sleep(2)
+            controller.disconnect()
         else:
-            print("デバイスが見つかりませんでした")
+            print("[Fatal] 接続できませんでした。相手の電源を確認してください。")
     except KeyboardInterrupt:
         controller.disconnect()
