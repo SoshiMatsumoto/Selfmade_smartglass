@@ -25,7 +25,7 @@ def on_write(value, options):
 
 def main():
     # アダプターの準備
-    dongle = adapter.Adapter(adapter.list_adapters()[0].address)
+    dongle = adapter.Adapter(adapter.list_adapters()[0])
     
     # ペリフェラル（サーバー）の設定
     print(f"BLEサーバーを起動します... ({dongle.address})")
