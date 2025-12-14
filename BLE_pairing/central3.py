@@ -54,21 +54,10 @@ try:
         print("\n>>> Fail to pair. <<<")
         sys.exit()
 
-    # 3. 接続 (Connect) - データ送信にはこれが必須
-    print("Trying to connect...")
-    child.sendline(f'connect {target_mac}')
-    
-    j = child.expect(["Connection successful", "Failed to connect", pexpect.TIMEOUT], timeout=10)
-    if j != 0:
-        print("\n>>> Fail to connect. <<<")
-        sys.exit()
-    
-    print("\n>>> Connection Successful! Preparing to write... <<<")
-    
     # サービスの解決を少し待つ（重要）
     time.sleep(2)
 
-    # 4. GATTメニューへ移動して書き込み
+    # 3. GATTメニューへ移動して書き込み
     child.sendline('menu gatt')
     child.expect('#')
 
