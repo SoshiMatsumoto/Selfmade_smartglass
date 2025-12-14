@@ -65,18 +65,18 @@ try:
     print(f"Selecting attribute: {CHAR_UUID}")
     child.sendline(f'select-attribute {CHAR_UUID}')
     
-    # 判定ロジックを修正:
-    # 1. "Attribute ... selected" というメッセージが出る
-    # 2. または、プロンプトが "char" を含む形 (例: [raspberrypi:/service0061/char0062]#) に変わる
-    # これら両方を「成功」とみなします
+    # 成功判定のロジックを修正
+    # プロンプトの中に "char" と 4桁のHexコード(例: char0068) が含まれていれば成功とみなす
+    # 色コードなどの余計な文字があってもヒットするように正規表現を調整
     k = child.expect([
-        f"Attribute {CHAR_UUID} selected",  # パターンA: メッセージが出る
-        r"\[.+/char.+\]#",                 # パターンB: プロンプトが変わる (正規表現)
-        "No attribute selected", 
+        r"char[0-9a-fA-F]{4}.*#",      # 成功パターン: プロンプトに charXXXX が含まれる
+        "No attribute selected",       # 失敗パターン
         pexpect.TIMEOUT
     ], timeout=5)
     
-    if k == 0 or k == 1:
+    if k == 0:
+        print(">>> Attribute selected successfully! <<<")
+        
         # 5. データの書き込み
         hex_data = str_to_hex_string(MESSAGE)
         print(f"Sending data: '{MESSAGE}' -> {hex_data}")
@@ -84,10 +84,14 @@ try:
         child.sendline(f'write "{hex_data}"')
         
         # 書き込み成功確認
+        # "Attempting to write" が出ることもあるので、完了を待つ
         child.expect(["Write successful", "Failed to write"], timeout=5)
         print("\n>>> Data Sent Successfully! <<<")
+        
     else:
         print("\n>>> Attribute not found. UUID is correct? <<<")
+        # デバッグ用: 何が見えていたかを表示
+        print(f"DEBUG info: {child.before}")
  
     # 終了処理
     print("Disconnecting...")
