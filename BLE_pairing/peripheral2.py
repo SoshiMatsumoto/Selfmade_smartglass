@@ -1,4 +1,4 @@
-# ターゲット(受信)側で動かすコード
+import subprocess
 from bluezero import adapter
 from bluezero import peripheral
 from bluezero import device
@@ -24,6 +24,11 @@ def on_write(value, options):
         print(f"デコードエラー: {e}")
 
 def main():
+
+    subprocess.run(["bluetoothctl", "pairable", "on"])
+    subprocess.run(["bluetoothctl", "agent", "NoInputNoOutput"])
+    
+    
     # アダプターの準備
     dongle = adapter.Adapter(adapter.list_adapters()[0])
     
