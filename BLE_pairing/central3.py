@@ -65,10 +65,18 @@ try:
     print(f"Selecting attribute: {CHAR_UUID}")
     child.sendline(f'select-attribute {CHAR_UUID}')
     
-    # 属性が見つかるか確認
-    k = child.expect([f"Attribute {CHAR_UUID} selected", "No attribute selected", pexpect.TIMEOUT], timeout=5)
+    # 判定ロジックを修正:
+    # 1. "Attribute ... selected" というメッセージが出る
+    # 2. または、プロンプトが "char" を含む形 (例: [raspberrypi:/service0061/char0062]#) に変わる
+    # これら両方を「成功」とみなします
+    k = child.expect([
+        f"Attribute {CHAR_UUID} selected",  # パターンA: メッセージが出る
+        r"\[.+/char.+\]#",                 # パターンB: プロンプトが変わる (正規表現)
+        "No attribute selected", 
+        pexpect.TIMEOUT
+    ], timeout=5)
     
-    if k == 0:
+    if k == 0 or k == 1:
         # 5. データの書き込み
         hex_data = str_to_hex_string(MESSAGE)
         print(f"Sending data: '{MESSAGE}' -> {hex_data}")
@@ -80,7 +88,7 @@ try:
         print("\n>>> Data Sent Successfully! <<<")
     else:
         print("\n>>> Attribute not found. UUID is correct? <<<")
-
+ 
     # 終了処理
     print("Disconnecting...")
     child.sendline('back') # gattメニューから戻る
