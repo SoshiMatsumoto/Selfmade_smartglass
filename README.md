@@ -17,3 +17,6 @@ This is a directory for the PoC of exfil files attack.
 
 Before you do this PoC, you have to do Show_notification.
 And make the file for be exfiltrated.
+
+### BLE_pairing
+This is a directory of BLE JustWorls pairing.
